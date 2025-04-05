@@ -271,6 +271,49 @@ const forgotpassword = async (req, res)=>{
         // save user
         // send email with reset password link =>design url
         // send response success message 
+        const {email} = req.body
+        if(!email){
+            return res.status(400).json({
+                message: "Email is required",
+            })
+        }
+        const user = await User.findOne({email})
+        if(!user){
+            return res.status(400).json({
+                message: "User not found",
+            })
+        }
+        const token = crypto.randomBytes(32).toString("hex")
+        console.log(token)
+        user.resetPasswordToken = token
+        user.resetPasswordExpires = Date.now() + 10 * 60 * 1000 // 10 min
+        await user.save()
+        console.log(user.resetPasswordToken)
+        // send email
+        const transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: process.env.SMTP_PORT,
+            secure: false, // true for port 465, false for other ports
+            auth: {
+                user: process.env.MAILTRAP_USER, // generated ethereal user
+                pass: process.env.MAILTRAP_PASSWORD, // generated ethereal password
+                },
+            });
+    
+            const mailOption = {
+                from: process.env.MAILTRAP_SENDEREMAIL, // sender address
+                to: user.email, // list of receivers
+                subject: "Reset your password ✔", // Subject line
+                text: "Hello world?", // plain text body
+                text: `please click the follwing link ${process.env.BASE_URL}/api/v1/users/resetpassword/${token}`, // html body
+            };
+            console.log(mailOption)
+            transporter.sendMail(mailOption)
+            res.status(200).json({
+                message: "Reset password link sent to your email",
+                success: true,
+            })
+
         
     } catch (error) {
         res.status(400).json({
@@ -288,28 +331,64 @@ const resetPassword = async (req, res)=>{
         // get token from params
         // get password from body
         // find user by token =>
-            const {token} = req.params;
-            const {password} = req.body;
-            try {
-                const user = await User.findOne({
-                    resetPasswordToken: token,
-                    resetPasswordExpires: {$gt: Date.now()}
-                })
+            // const {token} = req.params;
+            // const {password} = req.body;
+            // try {
+            //     const user = await User.findOne({
+            //         resetPasswordToken: token,
+            //         resetPasswordExpires: {$gt: Date.now()}
+            //     })
 
                 // set password in user
                 // remove token and expires from user
                 // save user
                 // send response success message
-            } catch (error) {
+            // } catch (error) {
                 
-            }
+            // }
         // validate token
         // update password
         // remove token and expires from user
         // save user
         // send response success message
+
+        const {token} = req.params;
+        const {password} = req.body;
+        if(!token){
+            return res.status(400).json({
+                message: "Invalid token",
+            })
+        }
+        if(!password){
+            return res.status(400).json({
+                message: "Password is required",
+            })
+        }
+        const user = await User.findOne({
+            resetPasswordToken: token,
+            resetPasswordExpires: {$gt: Date.now()}
+        })
+        if(!user){
+            return res.status(400).json({
+                message: "Invalid token",
+            })
+        }
+        user.password = password
+        user.resetPasswordToken = undefined
+        user.resetPasswordExpires = undefined
+        await user.save()
+        res.status(200).json({
+            message: "Password reset successfully",
+            success: true,
+        })
+
         
     } catch (error) {
+        res.status(400).json({
+            message: "User not found",
+            success: false,
+            error
+        })
         
     }
 }
@@ -322,8 +401,43 @@ const changePassword = async (req, res)=>{
         // update password
         // save user
         // send response success message
+        const {oldPassword, newPassword} = req.body
+        if(!oldPassword || !newPassword){
+            return res.status(400).json({
+                message: "All fields are required",
+            })
+        }
+        if(newPassword.length < 6){
+            return res.status(400).json({
+                message: "Password must be at least 6 characters",
+            })
+        }
+        const user = await User.findById(req.user.id)
+        if(!user){
+            return res.status(400).json({
+                message: "User not found",
+            })
+        }
+        const isMatch = await bcrypt.compare(oldPassword, user.password)
+        if(!isMatch){
+            return res.status(400).json({
+                message: "Invalid password",
+            })
+        }
+        user.password = newPassword
+        await user.save()
+        res.status(200).json({
+            message: "Password changed successfully",
+            success: true,
+        })
+        
         
     } catch (error) {
+        res.status(400).json({
+            message: "User not found",
+            success: false,
+            error
+        })
         
     }
 }

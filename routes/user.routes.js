@@ -13,6 +13,9 @@ router.get("/verify/:token", verifyUser)
 router.post("/login", login);
 router.get("/me", isloggedIn, getMe);
 router.get("/logout", isloggedIn,logOutUser);
+router.post("/forgotpassword", forgotpassword);
+router.post("/resetpassword/:token", resetPassword);
+router.post("/changepassword", isloggedIn, changePassword);
 
 
 export default router;

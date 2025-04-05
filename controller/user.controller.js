@@ -214,16 +214,48 @@ const login = async (req, res) => {
 
 const getMe = async (req, res)=>{
     try {
+       const user = await User.findById(req.user.id).select("-password")
+         if(!user){
+          return res.status(400).json({
+                message: "User not found",
+                success: false,
+          })
+         }
+
+        res.status(200).json({
+            message: "User found",
+            success: true,
+            user
+        })
         
     } catch (error) {
+        res.status(400).json({
+            message: "User not found",
+            success: false,
+            error
+        })
         
     }
 }
 
 const logOutUser = async (req, res)=>{
     try {
+        res.cookie("test","",{
+            // expires: new Date(0), //explore my self leter 
+
+        })
+        res.status(200).json({
+            message: "User logged out successfully",
+            success: true,
+            
+        })
         
     } catch (error) {
+        res.status(400).json({
+            message: "User not logged out",
+            success: false,
+            error
+        })
         
     }
 }
@@ -231,8 +263,21 @@ const logOutUser = async (req, res)=>{
 
 const forgotpassword = async (req, res)=>{
     try {
+
+        // get email from body
+        // find user by email
+        // generate reset password token
+        // resettoken and expires => date.now + 10 min
+        // save user
+        // send email with reset password link =>design url
+        // send response success message 
         
     } catch (error) {
+        res.status(400).json({
+            message: "User not found",
+            success: false,
+            error
+        })
         
     }
 }
@@ -240,6 +285,29 @@ const forgotpassword = async (req, res)=>{
 
 const resetPassword = async (req, res)=>{
     try {
+        // get token from params
+        // get password from body
+        // find user by token =>
+            const {token} = req.params;
+            const {password} = req.body;
+            try {
+                const user = await User.findOne({
+                    resetPasswordToken: token,
+                    resetPasswordExpires: {$gt: Date.now()}
+                })
+
+                // set password in user
+                // remove token and expires from user
+                // save user
+                // send response success message
+            } catch (error) {
+                
+            }
+        // validate token
+        // update password
+        // remove token and expires from user
+        // save user
+        // send response success message
         
     } catch (error) {
         
@@ -248,6 +316,12 @@ const resetPassword = async (req, res)=>{
 
 const changePassword = async (req, res)=>{
     try {
+        // get password from body
+        // find user by id
+        // check if password is correct
+        // update password
+        // save user
+        // send response success message
         
     } catch (error) {
         
@@ -256,7 +330,7 @@ const changePassword = async (req, res)=>{
 
 
 
-export {registerUser, verifyUser, login};
+export {registerUser, verifyUser, login, getMe, logOutUser, forgotpassword, resetPassword, changePassword};
 
 
 
